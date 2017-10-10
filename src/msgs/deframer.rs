@@ -13,6 +13,9 @@ const HEADER_SIZE: usize = 1 + 2 + 2;
 /// for ciphertext overheads.
 const MAX_MESSAGE: usize = 16384 + 2048 + HEADER_SIZE;
 
+/// Bound on our unprocessed frames queue. Arbitrarily chosen.
+const QUEUE_SIZE: usize = 1024;
+
 /// This deframer works to reconstruct TLS messages
 /// from arbitrary-sized reads, buffering as neccessary.
 /// The input is `read()`, the output is the `frames` deque.
@@ -43,6 +46,8 @@ impl MessageDeframer {
     /// buffer.  If this means our internal buffer contains
     /// full messages, decode them all.
     pub fn read(&mut self, rd: &mut io::Read) -> io::Result<usize> {
+        if self.frames.len() > QUEUE_SIZE { return Ok(0) }
+
         // Try to do the largest reads possible.  Note that if
         // we get a message with a length field out of range here,
         // we do a zero length read.  That looks like an EOF to
